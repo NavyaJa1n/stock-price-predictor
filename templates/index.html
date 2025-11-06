@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Stock Predictor</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Our custom app logic. This file is CRITICAL. -->
+<script src="/static/app.js" defer></script>
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans p-6">
+
+<!-- MAIN CONTAINER -->
+<div class="max-w-5xl mx-auto">
+    
+    <!-- HEADER -->
+    <header class="mb-8 text-center">
+        <h1 class="text-4xl font-bold text-blue-400">ML Market Predictor</h1>
+        <p class="text-lg text-gray-400 mt-2">Human Intuition vs. Trained ML Model</p>
+    </header>
+
+    <!-- CONTROLS -->
+    <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+        <div class="flex flex-wrap sm:flex-nowrap gap-4">
+            <div>
+                <label for="stockSelect" class="block text-sm font-bold mb-2 text-gray-300">1. Select Stock</label>
+                <select id="stockSelect" class="bg-gray-700 border-2 border-gray-600 rounded-lg p-2 text-lg focus:outline-none focus:border-blue-500 transition w-full sm:w-48">
+                    <!-- Stocks from our training script -->
+                    <option value="GOOGL">Google (GOOGL)</option>
+                    <option value="NVDA">NVIDIA (NVDA)</option>
+                    <option value="C">Citi (C)</option>
+                    <option value="RELIANCE.NS">Reliance (RELIANCE.NS)</option>
+                    <option value="HCLTECH.NS">HCL (HCLTECH.NS)</option>
+                    <option value="TSLA">Tesla (TSLA)</option>
+                </select>
+            </div>
+             <div>
+                <label for="periodSelect" class="block text-sm font-bold mb-2 text-gray-300">2. Select Period</label>
+                <select id="periodSelect" class="bg-gray-700 border-2 border-gray-600 rounded-lg p-2 text-lg focus:outline-none focus:border-blue-500 transition w-full sm:w-48">
+                    <option value="1mo">Past 1 Month</option>
+                    <option value="10d">Past 10 Days</option>
+                    <option value="3mo">Past 3 Months</option>
+                </select>
+            </div>
+        </div>
+        <button onclick="loadStockChallenge()" id="loadBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition shadow-lg w-full md:w-auto">
+            Load Challenge
+        </button>
+    </div>
+
+    <!-- LOADING STATE -->
+    <div id="loading" class="hidden text-center py-20">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-400 mx-auto mb-4"></div>
+        <p class="text-xl text-gray-400">Fetching market data...</p>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div id="error" class="hidden bg-red-900 border-l-4 border-red-500 text-red-200 p-4 mb-8 rounded" role="alert">
+        <p class="font-bold">Error</p>
+        <p id="errorMsg">Something went wrong.</p>
+    </div>
+
+    <!-- GAME AREA (Hidden initially) -->
+    <div id="gameArea" class="hidden animate-fade-in">
+        
+        <!-- CHART CARD -->
+        <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-xl font-bold mb-4 text-gray-300 flex justify-between flex-col sm:flex-row gap-2">
+                <span>Past Performance</span>
+                <span class="text-sm font-normal text-gray-500 bg-gray-700 px-3 py-1 rounded-full">Data hidden for: <span id="targetDateDisplay" class="font-bold text-blue-400">---</span></span>
+            </h2>
+            <div class="relative h-80 md:h-96">
+                <canvas id="stockChart"></canvas>
+            </div>
+        </div>
+
+        <!-- PREDICTION INTERFACE -->
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- INPUT CARD -->
+            <div class="bg-gray-800 p-8 rounded-xl shadow-lg border-t-4 border-blue-500">
+                <h3 class="text-2xl font-bold mb-4 text-gray-100">Make Your Prediction</h3>
+                <p class="mb-6 text-gray-400">Based on the chart, what was the closing price on <span class="targetDateRef font-bold text-blue-400">---</span>?</p>
+                
+                <div class="flex gap-4 mb-6">
+                    <div class="flex-grow">
+                         <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Your Guess ($)</label>
+                        <input type="number" id="userGuess" step="0.01" placeholder="e.g. 150.25" class="w-full bg-gray-700 border-2 border-gray-600 p-4 rounded-lg text-2xl font-mono focus:border-blue-500 focus:outline-none transition text-white">
+                    </div>
+                </div>
+                <button onclick="revealResults()" id="revealBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-lg text-xl transition shadow-md">
+                    Reveal Results
+                </button>
+            </div>
+
+             <!-- RESULTS CARD (Hidden initially) -->
+             <div id="resultsCard" class="hidden bg-gray-700 text-white p-8 rounded-xl shadow-xl opacity-0 transition-all duration-700">
+                <h3 class="text-2xl font-bold mb-6 border-b border-gray-600 pb-4">Challenge Results</h3>
+                
+                <div class="space-y-6">
+                    <!-- Actual -->
+                    <div>
+                        <p class="text-sm text-gray-400 uppercase font-bold">Actual Closing Price</p>
+                        <p class="text-4xl font-mono font-bold text-blue-400" id="resActual">---</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- User -->
+                        <div class="bg-gray-600 p-4 rounded-lg">
+                            <p class="text-xs text-gray-300 uppercase font-bold mb-1">Your Guess</p>
+                            <p class="text-2xl font-mono" id="resUser">---</p>
+                            <p class="text-sm mt-2" id="resUserDiff">Diff: ---</p>
+                        </div>
+                        <!-- Model -->
+                        <div class="bg-gray-600 p-4 rounded-lg">
+                            <p class="text-xs text-gray-300 uppercase font-bold mb-1">ML Model Prediction</p>
+                            <p class="text-xs text-gray-400" id="resModelName">(Model: ---)</p>
+                            <p class="text-2xl font-mono mt-1" id="resModel">---</p> <p class="text-sm mt-2" id="resModelDiff">Diff: ---</p>
+                        </div>
+                    </div>
+
+                    <!-- Winner Banner -->
+                    <div id="winnerBanner" class="text-center py-3 px-4 rounded-lg font-bold text-lg mt-6 bg-gray-800">
+                        Determining winner...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div> <!-- End Main Container -->
+
+
+</body>
+</html>
