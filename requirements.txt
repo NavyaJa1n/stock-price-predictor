@@ -1,0 +1,10 @@
+# requirements.txt
+Flask
+flask_cors
+gunicorn  # <-- CRITICAL for production
+yfinance
+pandas
+numpy
+scikit-learn
+xgboost
+joblib
