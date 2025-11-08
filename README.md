@@ -9,6 +9,7 @@ This project fetches **real-time stock data**, runs it through a pre-trained ML 
 ## 🚀 Live Demo
 
 ➡️ **[View the Live Demo Here](https://stock-price-predictor-qhi6.onrender.com)**  
+Note: If it doesn't work the first time, try loading it on another tab.
 
 ---
 
